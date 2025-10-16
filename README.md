@@ -16,204 +16,34 @@ A simple todo application built with Python FastAPI backend, React TypeScript fr
 
 ### System Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           YATA TODO APPLICATION                                │
-└─────────────────────────────────────────────────────────────────────────────────┘
+![System Architecture](docs/images/system_architecture.png)
 
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Client Layer  │    │  Frontend Layer │    │  Backend Layer  │
-│                 │    │                 │    │                 │
-│ ┌─────────────┐ │    │ ┌─────────────┐ │    │ ┌─────────────┐ │
-│ │Web Browser  │ │    │ │React Front- │ │    │ │FastAPI      │ │
-│ │             │◄┼────┼──│end (3000)   │◄┼────┼──│Backend      │ │
-│ └─────────────┘ │    │ │             │ │    │ │(8000)       │ │
-│                 │    │ └─────────────┘ │    │ └─────────────┘ │
-│ ┌─────────────┐ │    │                 │    │                 │
-│ │AI Assistant │◄┼─────────────────────┼────┼─────────────────┘
-│ │with MCP     │ │    │                 │    │
-│ └─────────────┘ │    │                 │    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                      │
-                       ┌─────────────────┐           │
-                       │  Data Layer     │◄──────────┘
-                       │                 │
-                       │ ┌─────────────┐ │
-                       │ │PostgreSQL   │ │
-                       │ └─────────────┘ │
-                       │                 │
-                       │ ┌─────────────┐ │
-                       │ │Redis        │ │
-                       │ └─────────────┘ │
-                       └─────────────────┘
-
-                       ┌─────────────────┐
-                       │External Services│
-                       │                 │
-                       │ ┌─────────────┐ │
-                       │ │Google OAuth │ │
-                       └─────────────────┘
-```
+The Yata application follows a modern microservices architecture with clear separation between frontend, backend, and data layers. The system supports both web browser interactions and AI assistant integration through the MCP (Model Context Protocol) server.
 
 ### Authentication Flow
 
-```
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│     User     │    │   Browser    │    │  Frontend    │    │   Backend    │    │    Google    │    │   Database   │
-│              │    │              │    │   React App  │    │   FastAPI    │    │    OAuth     │    │              │
-└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
-       │                   │                   │                   │                   │                   │
-       │ Clicks Login      │                   │                   │                   │                   │
-       ├──────────────────►│                   │                   │                   │                   │
-       │                   │ Initiate login    │                   │                   │                   │
-       │                   ├──────────────────►│                   │                   │                   │
-       │                   │                   │ GET /api/v1/auth/ │                   │                   │
-       │                   │                   │ google/login      │                   │                   │
-       │                   │                   ├──────────────────►│                   │                   │
-       │                   │                   │                   │ Redirect to Google│                   │
-       │                   │                   │                   ├──────────────────►│                   │
-       │                   │                   │                   │                   │ Show consent     │
-       │                   │                   │                   │                   │ screen           │
-       │                   │                   │                   │                   ├──────────────────►│
-       │                   │                   │                   │                   │                   │
-       │                   │                   │                   │                   │ Grant permission │
-       │                   │                   │                   │                   │◄──────────────────┤
-       │                   │                   │                   │ Redirect with auth │                   │
-       │                   │                   │                   │ code              │                   │
-       │                   │                   │                   │◄──────────────────┤                   │
-       │                   │                   │                   │                   │                   │
-       │                   │                   │ Exchange code for │                   │                   │
-       │                   │                   │ tokens            │                   │                   │
-       │                   │                   │                   ├──────────────────►│                   │
-       │                   │                   │                   │◄──────────────────┤ Return access     │
-       │                   │                   │                   │                   │ token & user info │
-       │                   │                   │ Create/update user│                   │                   │
-       │                   │                   │ record            │                   │                   │
-       │                   │                   │                   ├──────────────────►│                   │
-       │                   │                   │ Create session    │                   │                   │
-       │                   │                   │◄──────────────────┤                   │                   │
-       │                   │ Redirect with     │                   │                   │                   │
-       │                   │ session           │                   │                   │                   │
-       │                   │◄──────────────────┤                   │                   │                   │
-       │                   │ Set session cookie│                   │                   │                   │
-       │                   │◄──────────────────┤                   │                   │                   │
-       │ Show auth state   │                   │                   │                   │                   │
-       │◄──────────────────┤                   │                   │                   │                   │
-```
+![Authentication Flow](docs/images/authentication_flow.png)
+
+The authentication process uses Google OAuth 2.0 to securely authenticate users. The flow begins when a user clicks the login button, redirects to Google for authentication, and completes with a session being established in the backend.
 
 ### Development Environment
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                        DOCKER COMPOSE DEVELOPMENT                              │
-└─────────────────────────────────────────────────────────────────────────────────┘
+The development environment uses Docker Compose to orchestrate all services. Each component runs in its own container with hot-reload enabled for rapid development. The MCP server container connects to the backend API for AI assistant integration.
 
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           HOST MACHINE                                         │
-│                                                                                 │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                            │
-│  │ Developer   │  │ IDE/Editor  │  │  Terminal   │                            │
-│  └─────────────┘  └─────────────┘  └─────────────┘                            │
-└─────────────────────────────────────────────────────────────────────────────────┘
-         │                   │                   │
-         │                   │                   │
-         └───────────────────┼───────────────────┘
-                             │
-                             │
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                        DOCKER CONTAINERS                                       │
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐  │
-│  │                    FRONTEND CONTAINER                                   │  │
-│  │                                                                         │  │
-│  │  ┌─────────────┐  ┌─────────────┐                                      │  │
-│  │  │React Dev    │  │Vite HMR     │                                      │  │
-│  │  │Server :3000 │  │             │                                      │  │
-│  │  └─────────────┘  └─────────────┘                                      │  │
-│  └─────────────────────────────────────────────────────────────────────────┘  │
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐  │
-│  │                    BACKEND CONTAINER                                    │  │
-│  │                                                                         │  │
-│  │  ┌─────────────┐  ┌─────────────┐                                      │  │
-│  │  │FastAPI Dev  │  │Uvicorn with │                                      │  │
-│  │  │Server :8000 │  │Reload       │                                      │  │
-│  │  └─────────────┘  └─────────────┘                                      │  │
-│  └─────────────────────────────────────────────────────────────────────────┘  │
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐  │
-│  │                  DATABASE CONTAINERS                                     │  │
-│  │                                                                         │  │
-│  │  ┌─────────────┐  ┌─────────────┐                                      │  │
-│  │  │PostgreSQL   │  │Redis        │                                      │  │
-│  │  │:5432        │  │:6379        │                                      │  │
-│  │  └─────────────┘  └─────────────┘                                      │  │
-│  └─────────────────────────────────────────────────────────────────────────┘  │
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐  │
-│  │                     MCP SERVER                                          │  │
-│  │                                                                         │  │
-│  │  ┌─────────────┐                                                        │  │
-│  │  │MCP-Yata     │                                                        │  │
-│  │  │Server       │                                                        │  │
-│  │  └─────────────┘                                                        │  │
-│  └─────────────────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
+### Production Architecture
+
+![Production Architecture](docs/images/production_architecture.png)
+
+The production environment is designed for high availability and scalability. It includes load balancing, SSL termination, monitoring with Prometheus and Grafana, and container orchestration. The architecture supports both web traffic and AI assistant interactions through the MCP server.
 
 ### OAuth 2.0 Machine-to-Machine Flow (MCP)
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                    OAUTH 2.0 M2M FLOW FOR MCP SERVER                           │
-└─────────────────────────────────────────────────────────────────────────────────┘
+The MCP server uses OAuth 2.0 client credentials flow for machine-to-machine authentication with the Yata API. This allows AI assistants to securely interact with the todo management system without user intervention.
 
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│ AI Assistant │    │  MCP Server  │    │ OAuth Server │    │  Yata API    │
-│              │    │              │    │ (Yata API)   │    │              │
-└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
-       │                   │                   │                   │
-       │                   │                   │                   │
-       │═══════════════════════════════════════════════════════════│
-       │              SETUP PHASE (ONE-TIME)                      │
-       │═══════════════════════════════════════════════════════════│
-       │                   │                   │                   │
-       │ Start MCP Server  │                   │                   │
-       ├──────────────────►│                   │                   │
-       │                   │ Register OAuth    │                   │
-       │                   │ Client            │                   │
-       │                   ├──────────────────►│                   │
-       │                   │◄──────────────────┤ Return client_id │
-       │                   │                   │ & client_secret  │
-       │                   │                   │                   │
-       │═══════════════════════════════════════════════════════════│
-       │            AUTHENTICATION FLOW                              │
-       │═══════════════════════════════════════════════════════════│
-       │                   │                   │                   │
-       │                   │ POST /oauth/token │                   │
-       │                   │ (client_id,       │                   │
-       │                   │ client_secret)    │                   │
-       │                   ├──────────────────►│                   │
-       │                   │◄──────────────────┤ Return            │
-       │                   │                   │ access_token      │
-       │                   │                   │                   │
-       │═══════════════════════════════════════════════════════════│
-       │               TODO OPERATIONS                                │
-       │═══════════════════════════════════════════════════════════│
-       │                   │                   │                   │
-       │ Create todo       │                   │                   │
-       │ request           │                   │                   │
-       ├──────────────────►│                   │                   │
-       │                   │ POST /api/v1/todos│                   │
-       │                   │ (Bearer:          │                   │
-       │                   │ access_token)     │                   │
-       │                   ├──────────────────►│                   │
-       │                   │◄──────────────────┤ Return created    │
-       │                   │                   │ todo              │
-       │ Return todo       │                   │                   │
-       │ details           │                   │                   │
-       │◄──────────────────┤                   │                   │
-```
+The flow consists of three phases:
+1. **Setup Phase**: One-time registration of the MCP server as an OAuth client
+2. **Authentication Flow**: Exchange client credentials for access tokens
+3. **Todo Operations**: Use access tokens to perform CRUD operations on todos
 
 For more detailed architectural diagrams, see [docs/architecture-diagrams.md](docs/architecture-diagrams.md).
 
